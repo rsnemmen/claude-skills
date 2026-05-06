@@ -7,7 +7,7 @@ allowed-tools: [Read, Glob, Grep, Bash, Agent]
 
 # Codebase Improvement Proposal
 
-Research the codebase and propose the **top 5 improvements, ranked by severity**. Do not modify any files.
+Research the codebase and surface the issues that actually matter, grouped by theme. Do not modify any files.
 
 ## Arguments
 
@@ -39,47 +39,35 @@ For each candidate finding, ask: "Could I paste this into a review of a complete
 
 Every finding must include a short quote or paraphrase of the actual code being criticized. A line reference alone is not enough.
 
-### 5. Rank and cut to the top 5
+### 5. Group findings by theme, lead with what matters most
 
-Assign every finding a severity:
+Cluster related findings into 2–4 themes that emerged from *this* codebase (e.g., "Numerical edge cases in the integrator", "Error propagation across the I/O boundary", "Hot-path allocations"). Theme names must be specific to what you found — never generic buckets like "Maintainability" or "Code quality".
 
-| Severity | Meaning |
-|----------|---------|
-| **Critical** | Correctness bug, data loss, or silently wrong results |
-| **High** | Likely to cause failures or significant wasted effort |
-| **Medium** | Real problem but workaround exists or impact is bounded |
-| **Low** | Polish or clarity — worth fixing but not urgent |
+Lead with the highest-impact theme. Within each theme, lead with the highest-impact finding. Convey priority through ordering and language ("the most consequential issue here is…", "minor but worth flagging…") — do not attach severity labels.
 
-Keep only the top 5 by severity. If you found fewer than 5 real issues, report fewer — don't pad.
+Soft cap: 5–8 findings total across all themes. If you found fewer real issues, report fewer — don't pad. If you genuinely found more, use judgment.
 
 ## Constraints
 
-- **Cite evidence for every claim.** File path + line number + a short quote or paraphrase of the actual code. If you can't cite it, don't claim it.
+- **Cite evidence inline.** When you describe an issue, weave the file:line reference and a short quote or paraphrase of the actual code into the same sentence — not in a separate field. If you can't cite it, don't claim it.
 - **No generic advice.** "Add more tests" without naming the specific untested function is not a finding.
 - **Read-only.** Do not edit, write, or run mutating commands.
-- **Top 5 max.** Quality over quantity.
 
-## Output format
+## Output style
 
-```
-## Scope and focus
-<one paragraph: what was reviewed and through which lens>
+Write the review as **themed sections**, not a templated list.
 
-## Findings (ranked by severity)
+Open with **one short paragraph** that conveys what you read and the single most important takeaway. Skip a formal "Scope and focus" header — let the opening paragraph do that work.
 
-### 1. [Severity] — <short title>
-- **What:** <one sentence describing the issue, quoting or paraphrasing the actual code>
-- **Where:** path/file.ext:42–58
-- **Why it matters:** <concrete impact on correctness, performance, or maintainability>
-- **Suggested change:** <description of the fix>
+For each theme:
 
-### 2. ...
+- Use a short, specific `###` heading drawn from what you actually found ("Numerical edge cases in the RK4 step", not "Correctness").
+- Write each finding as 1–3 sentences of prose that weave together: what's wrong (with file:line and a quote or paraphrase of the actual code), why it matters in this specific codebase, and a concrete suggestion if one is obvious. Do not use a rigid sub-template — a finding can be one paragraph or a couple of sentences.
 
-## Open questions
-- <thing that looks suspicious but needs domain knowledge to judge — phrase as a question>
+If a finding genuinely needs domain knowledge to judge, phrase it as a question inline within its theme — no separate "Open questions" section.
 
-## Out of scope (noted but not pursued)
-- <area noticed but deliberately not investigated, with brief reason>
-```
+If you noticed an area but deliberately didn't pursue it, mention it in one sentence at the end of the relevant theme or in a single closing line — no formal "Out of scope" section.
+
+Optionally close with a one-line priority order or a brief "What's solid" note — only if it adds real value.
 
 If no meaningful issues exist, say so plainly.
