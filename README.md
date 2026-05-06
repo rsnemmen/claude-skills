@@ -12,11 +12,19 @@ Custom Claude Code skills.
 
 Claude Code reads skills from `~/.claude/skills/<name>/SKILL.md` (user scope — available in every session) or `<project>/.claude/skills/<name>/SKILL.md` (project scope).
 
-Clone this repo and symlink the skills you want:
+To install without cloning this repo, download and run the interactive installer:
 
 ```sh
-git clone https://github.com/rsnemmen/cc-skills.git ~/cc-skills
-ln -s ~/cc-skills/codebase-improve ~/.claude/skills/codebase-improve
+curl -fsSLo /tmp/install-claude-skills.py https://raw.githubusercontent.com/rsnemmen/claude-skills/main/install-skills.py && python3 /tmp/install-claude-skills.py
+```
+
+The installer lists available skills and copies your selections to `~/.claude/skills/<skill-name>/`.
+
+For development, clone this repo and symlink the skills you want:
+
+```sh
+git clone https://github.com/rsnemmen/claude-skills.git ~/claude-skills
+ln -s ~/claude-skills/codebase-improve ~/.claude/skills/codebase-improve
 ```
 
 Symlinking (rather than copying) means `git pull` updates your installed skills automatically. For project scope, symlink under `<project>/.claude/skills/` instead.
