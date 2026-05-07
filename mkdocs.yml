@@ -1,0 +1,47 @@
+site_name: Claude Code Skills
+site_description: Custom Claude Code skills (slash commands).
+site_author: Rodrigo Nemmen da Silva
+site_url: https://rsnemmen.github.io/claude-skills/
+repo_url: https://github.com/rsnemmen/claude-skills
+repo_name: rsnemmen/claude-skills
+edit_uri: edit/main/docs/
+
+theme:
+  name: material
+  features:
+    - navigation.sections
+    - navigation.top
+    - navigation.indexes
+    - search.highlight
+    - content.code.copy
+    - content.action.edit
+  palette:
+    - media: "(prefers-color-scheme: light)"
+      scheme: default
+      toggle:
+        icon: material/brightness-7
+        name: Switch to dark mode
+    - media: "(prefers-color-scheme: dark)"
+      scheme: slate
+      toggle:
+        icon: material/brightness-4
+        name: Switch to light mode
+
+nav:
+  - Overview: index.md
+  - Installation: installation.md
+  - Skills:
+      - skills/index.md
+      - codebase-improve: skills/codebase-improve.md
+      - bootstrap-docs: skills/bootstrap-docs.md
+  - Contributing: contributing.md
+
+markdown_extensions:
+  - tables
+  - admonition
+  - pymdownx.details
+  - pymdownx.superfences
+  - pymdownx.highlight:
+      anchor_linenums: true
+  - toc:
+      permalink: true
