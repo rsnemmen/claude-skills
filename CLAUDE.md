@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## What this repo is
 
-A collection of custom Claude Code skills (slash commands) for personal use. Each skill lives in its own subdirectory as a `SKILL.md` file and is installed by symlinking that directory into `~/.claude/skills/`.
+A collection of custom Claude Code skills (slash commands) for personal use. Each skill lives in its own subdirectory under `skills/` as a `SKILL.md` file and is installed by symlinking that directory into `~/.claude/skills/`.
 
 ## Skill file format
 
@@ -27,9 +27,9 @@ The `description` field is the most important: Claude Code uses it to decide whe
 
 ## Adding a new skill
 
-1. Create `<skill-name>/SKILL.md` following the format above.
+1. Create `skills/<skill-name>/SKILL.md` following the format above.
 2. Update the skills table in `README.md`.
-3. Symlink to install: `ln -s ~/cc-skills/<skill-name> ~/.claude/skills/<skill-name>`.
+3. Symlink to install: `ln -s ~/cc-skills/skills/<skill-name> ~/.claude/skills/<skill-name>`.
 
 ## Testing a skill
 

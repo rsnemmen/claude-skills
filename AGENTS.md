@@ -2,7 +2,7 @@
 
 ## Project Structure & Module Organization
 
-This repository stores custom Claude Code skills. Each skill lives in its own top-level directory and contains a `SKILL.md` file, for example `codebase-improve/SKILL.md`. Repository-level documentation lives in `README.md` and `CLAUDE.md`; keep both aligned with any skill additions or behavior changes. There is no separate source, test, or asset tree at present.
+This repository stores custom Claude Code skills. Each skill lives in its own directory under `skills/` and contains a `SKILL.md` file, for example `skills/codebase-improve/SKILL.md`. Repository-level documentation lives in `README.md` and `CLAUDE.md`; keep both aligned with any skill additions or behavior changes. There is no separate source, test, or asset tree at present.
 
 ## Build, Test, and Development Commands
 
@@ -15,13 +15,13 @@ rg --files
 Lists tracked project files quickly when checking structure.
 
 ```sh
-ln -s ~/cc-skills/<skill-name> ~/.claude/skills/<skill-name>
+ln -s ~/cc-skills/skills/<skill-name> ~/.claude/skills/<skill-name>
 ```
 
 Installs a skill for local Claude Code use by symlinking the skill directory.
 
 ```sh
-git diff -- README.md CLAUDE.md <skill-name>/SKILL.md
+git diff -- README.md CLAUDE.md skills/<skill-name>/SKILL.md
 ```
 
 Reviews documentation and prompt changes before committing.

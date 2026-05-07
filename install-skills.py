@@ -88,8 +88,9 @@ def parse_frontmatter(skill_file: Path) -> dict[str, str]:
 
 
 def discover_skills(repo_root: Path) -> list[dict[str, str | Path]]:
+    skills_root = repo_root / "skills"
     skills: list[dict[str, str | Path]] = []
-    for child in sorted(repo_root.iterdir(), key=lambda path: path.name):
+    for child in sorted(skills_root.iterdir(), key=lambda path: path.name):
         skill_file = child / "SKILL.md"
         if not child.is_dir() or not skill_file.is_file():
             continue

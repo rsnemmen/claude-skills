@@ -23,7 +23,7 @@ For development, clone this repo and symlink the skills you want:
 
 ```sh
 git clone https://github.com/rsnemmen/claude-skills.git ~/claude-skills
-ln -s ~/claude-skills/codebase-improve ~/.claude/skills/codebase-improve
+ln -s ~/claude-skills/skills/codebase-improve ~/.claude/skills/codebase-improve
 ```
 
 Symlinking (rather than copying) means `git pull` updates your installed skills automatically. For project scope, symlink under `<project>/.claude/skills/` instead.
