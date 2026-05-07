@@ -1,7 +1,7 @@
 ---
 name: bootstrap-docs
-description: Research, recommend, and scaffold a documentation website for the current codebase. Use when the user asks to "set up docs", "add a docs site", "bootstrap documentation", "make a documentation website", "publish docs to GitHub Pages", "add MkDocs/Docusaurus/Sphinx/Starlight to this repo", or asks which docs generator fits this project. Two-phase: Phase 1 recommends a stack with rationale (read-only); Phase 2 scaffolds files with real content only after the user confirms or passes --scaffold.
-argument-hint: [--scaffold] [stack] [focus] — empty for Phase 1; --scaffold to accept recommendation; --scaffold <mkdocs|docusaurus|sphinx|hugo|starlight|vitepress|readme> to override
+description: 'Research, recommend, and scaffold a documentation website for the current codebase. Use when the user asks to "set up docs", "add a docs site", "bootstrap documentation", "make a documentation website", "publish docs to GitHub Pages", "add MkDocs/Docusaurus/Sphinx/Starlight to this repo", or asks which docs generator fits this project. Two-phase: Phase 1 recommends a stack with rationale (read-only); Phase 2 scaffolds files with real content only after the user confirms or passes --scaffold.'
+argument-hint: '[--scaffold] [stack] [focus] — empty for Phase 1; --scaffold to accept recommendation; --scaffold <mkdocs|docusaurus|sphinx|hugo|starlight|vitepress|readme> to override'
 allowed-tools: [Read, Glob, Grep, Bash, Write, Edit, Agent]
 ---
 

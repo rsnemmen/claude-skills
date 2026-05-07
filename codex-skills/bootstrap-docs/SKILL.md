@@ -1,6 +1,6 @@
 ---
 name: bootstrap-docs
-description: Research, recommend, and scaffold a documentation website for the current codebase. Use when the user asks to set up docs, add a docs site, bootstrap documentation, make a documentation website, publish docs to GitHub Pages, add MkDocs/Docusaurus/Sphinx/Starlight to this repo, or asks which docs generator fits this project. Two-phase: Phase 1 recommends a stack with rationale; Phase 2 scaffolds files with real content only after the user confirms.
+description: 'Research, recommend, and scaffold a documentation website for the current codebase. Use when the user asks to set up docs, add a docs site, bootstrap documentation, make a documentation website, publish docs to GitHub Pages, add MkDocs/Docusaurus/Sphinx/Starlight to this repo, or asks which docs generator fits this project. Two-phase: Phase 1 recommends a stack with rationale; Phase 2 scaffolds files with real content only after the user confirms.'
 metadata:
   short-description: Recommend and scaffold a documentation site
 ---

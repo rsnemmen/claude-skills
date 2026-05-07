@@ -42,6 +42,12 @@ Reviews documentation and prompt changes before committing.
 
 Use one directory per skill per platform, and make the directory name match the `name` field in the `SKILL.md` frontmatter. Claude Code skill files must start with YAML frontmatter containing `name`, `description`, `argument-hint`, and `allowed-tools`. Codex skill files must include `name` and `description`, should include `metadata.short-description`, and should not include Claude-only fields. Keep descriptions precise because both agents use them for skill triggering. Prefer short headings, direct instructions, and explicit output constraints.
 
+YAML frontmatter is parsed strictly. Quote long or punctuation-heavy scalar values, especially `description` and `argument-hint` values containing `:`, `#`, `[ ]`, `{ }`, quotes, slash-command examples, or other syntax-like text. Validate new or edited skills with:
+
+```sh
+python3 -c 'import pathlib, yaml; [yaml.safe_load(p.read_text().split("---", 2)[1]) for p in pathlib.Path(".").glob("**/SKILL.md")]'
+```
+
 ## Converting Claude Skills to Codex
 
 When a user creates or updates a Claude Code skill in `skills/<skill-name>/SKILL.md`, keep that file as the Claude source and convert a copy for Codex:

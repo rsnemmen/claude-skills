@@ -25,6 +25,12 @@ allowed-tools: [Read, Glob, Grep, Bash, Agent, ...]
 
 The `description` field is the most important: Claude Code uses it to decide whether to auto-trigger the skill. Write it to match the natural language a user would type.
 
+YAML frontmatter is parsed strictly. Quote long or punctuation-heavy scalar values, especially `description` and `argument-hint` values containing `:`, `#`, `[ ]`, `{ }`, quotes, slash-command examples, or other syntax-like text. Validate new or edited skills with:
+
+```sh
+python3 -c 'import pathlib, yaml; [yaml.safe_load(p.read_text().split("---", 2)[1]) for p in pathlib.Path(".").glob("**/SKILL.md")]'
+```
+
 ## Adding a new skill
 
 1. Create `skills/<skill-name>/SKILL.md` following the format above.

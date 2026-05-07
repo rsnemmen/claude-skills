@@ -1,7 +1,7 @@
 ---
 name: codebase-improve
 description: Research and propose improvements to the current codebase, cited with file:line evidence. Use when the user asks for an audit, refactoring proposal, performance/security/maintainability/test-coverage/dead-code/type-safety/error-handling/DX review, or general "what could we improve here" questions. Produces recommendations only — does not modify code.
-argument-hint: [scope] [focus] — e.g. "fortran/ performance" or "whole codebase maintainability"
+argument-hint: '[scope] [focus] — e.g. "fortran/ performance" or "whole codebase maintainability"'
 allowed-tools: [Read, Glob, Grep, Bash, Agent]
 ---
 
