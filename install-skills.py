@@ -6,6 +6,7 @@ from __future__ import annotations
 import argparse
 import contextlib
 import datetime as dt
+import hashlib
 import io
 import os
 import shutil
@@ -20,6 +21,13 @@ DEFAULT_ARCHIVE_URL = (
     "https://github.com/rsnemmen/claude-skills/archive/refs/heads/main.zip"
 )
 DEFAULT_INSTALL_DIR = Path.home() / ".claude" / "skills"
+
+STATUS_LABELS = {
+    "not_installed": "not installed",
+    "outdated": "outdated",
+    "up_to_date": "up-to-date",
+    "linked": "linked",
+}
 
 
 class InstallerError(Exception):
@@ -63,6 +71,65 @@ def safe_extract(archive_data: bytes, destination: Path) -> Path:
         raise InstallerError("Downloaded file is not a valid zip archive.") from exc
 
 
+def find_local_repo() -> Path | None:
+    """Walk up from the script's location to find a repo root with a skills/ subdir."""
+    candidate = Path(__file__).resolve().parent
+    while True:
+        skills_dir = candidate / "skills"
+        if skills_dir.is_dir() and any(
+            (child / "SKILL.md").is_file()
+            for child in skills_dir.iterdir()
+            if child.is_dir()
+        ):
+            return candidate
+        parent = candidate.parent
+        if parent == candidate:
+            return None
+        candidate = parent
+
+
+def resolve_source(args: argparse.Namespace) -> tuple[Path | None, bool]:
+    """Return (repo_root, is_local). repo_root=None means use the download path."""
+    if args.source is not None:
+        source = Path(args.source).expanduser().resolve()
+        if not (source / "skills").is_dir():
+            raise InstallerError(f"--source path has no skills/ subdir: {source}")
+        return source, True
+
+    local = find_local_repo()
+    if local is not None:
+        return local, True
+
+    return None, False
+
+
+def hash_skill_tree(path: Path) -> str:
+    """SHA-256 over sorted (relative-path, content) pairs for every non-dotfile."""
+    h = hashlib.sha256()
+    for file in sorted(path.rglob("*")):
+        if not file.is_file():
+            continue
+        if any(part.startswith(".") for part in file.relative_to(path).parts):
+            continue
+        h.update(str(file.relative_to(path)).encode())
+        h.update(file.read_bytes())
+    return h.hexdigest()
+
+
+def skill_status(source_skill: Path, target: Path) -> str:
+    """Classify a skill's install state relative to the source."""
+    if target.is_symlink():
+        if os.path.realpath(target) == os.path.realpath(source_skill):
+            return "linked"
+        if not target.exists():
+            return "not_installed"  # dangling symlink
+    elif not target.exists():
+        return "not_installed"
+    if hash_skill_tree(source_skill) == hash_skill_tree(target):
+        return "up_to_date"
+    return "outdated"
+
+
 def parse_frontmatter(skill_file: Path) -> dict[str, str]:
     metadata: dict[str, str] = {}
     try:
@@ -87,7 +154,7 @@ def parse_frontmatter(skill_file: Path) -> dict[str, str]:
     return metadata
 
 
-def discover_skills(repo_root: Path) -> list[dict[str, str | Path]]:
+def discover_skills(repo_root: Path, install_dir: Path) -> list[dict[str, str | Path]]:
     skills_root = repo_root / "skills"
     skills: list[dict[str, str | Path]] = []
     for child in sorted(skills_root.iterdir(), key=lambda path: path.name):
@@ -96,6 +163,8 @@ def discover_skills(repo_root: Path) -> list[dict[str, str | Path]]:
             continue
 
         metadata = parse_frontmatter(skill_file)
+        target = install_dir / child.name
+        status = skill_status(child, target)
         skills.append(
             {
                 "dir_name": child.name,
@@ -103,6 +172,7 @@ def discover_skills(repo_root: Path) -> list[dict[str, str | Path]]:
                 "name": metadata.get("name", child.name),
                 "description": metadata.get("description", ""),
                 "argument_hint": metadata.get("argument-hint", ""),
+                "status": status,
             }
         )
     return skills
@@ -123,6 +193,10 @@ def prompt(prompt_stream, message: str) -> str:
     return answer.strip()
 
 
+def _status_tag(status: str) -> str:
+    return f"[{STATUS_LABELS.get(status, status)}]"
+
+
 def print_menu(skills: list[dict[str, str | Path]]) -> None:
     print("\nAvailable skills:")
     for index, skill in enumerate(skills, start=1):
@@ -130,21 +204,42 @@ def print_menu(skills: list[dict[str, str | Path]]) -> None:
         dir_name = skill["dir_name"]
         description = skill["description"]
         argument_hint = skill["argument_hint"]
-        print(f"  {index}. {dir_name} ({name})")
+        status = str(skill.get("status", ""))
+        tag = f"  {_status_tag(status)}" if status else ""
+        print(f"  {index}. {dir_name} ({name}){tag}")
         if description:
             print(f"     {description}")
         if argument_hint:
             print(f"     Arguments: {argument_hint}")
-    print("\nSelect skills by number, comma list, range, 'all', or 'q' to quit.")
+    print(
+        "\nSelect by number, range, 'all', 'outdated'/'o', 'missing'/'m', or 'q' to quit."
+    )
 
 
-def parse_selection(selection: str, skill_count: int) -> list[int] | None:
+def print_status_report(skills: list[dict[str, str | Path]]) -> None:
+    print("Skills status:")
+    for skill in skills:
+        dir_name = skill["dir_name"]
+        status = str(skill.get("status", ""))
+        tag = _status_tag(status) if status else ""
+        print(f"  {dir_name}  {tag}")
+
+
+def parse_selection(
+    selection: str,
+    skills: list[dict[str, str | Path]],
+) -> list[int] | None:
     normalized = selection.strip().lower()
     if normalized in {"q", "quit", "exit"}:
         return None
     if normalized in {"a", "all"}:
-        return list(range(skill_count))
+        return list(range(len(skills)))
+    if normalized in {"o", "outdated"}:
+        return [i for i, s in enumerate(skills) if s.get("status") == "outdated"]
+    if normalized in {"m", "missing"}:
+        return [i for i, s in enumerate(skills) if s.get("status") == "not_installed"]
 
+    skill_count = len(skills)
     selected: set[int] = set()
     for chunk in normalized.split(","):
         part = chunk.strip()
@@ -182,7 +277,7 @@ def choose_skills(
         print_menu(skills)
         answer = prompt(prompt_stream, "Selection: ")
         try:
-            indexes = parse_selection(answer, len(skills))
+            indexes = parse_selection(answer, skills)
         except ValueError as exc:
             print(f"{exc}. Try again.")
             continue
@@ -229,10 +324,24 @@ def resolve_conflict(prompt_stream, target: Path) -> str:
         print("Please enter skip, overwrite, backup, or abort.")
 
 
-def install_skill(prompt_stream, skill: dict[str, str | Path], install_dir: Path) -> bool:
+def install_skill(
+    prompt_stream,
+    skill: dict[str, str | Path],
+    install_dir: Path,
+    link_mode: bool,
+) -> bool:
     source = Path(skill["path"])
     dir_name = str(skill["dir_name"])
+    status = str(skill.get("status", ""))
     target = install_dir / dir_name
+
+    if status in ("linked", "up_to_date"):
+        print(f"  {dir_name}: already up-to-date, skipping.")
+        return True
+
+    # Remove dangling symlinks silently before proceeding.
+    if target.is_symlink() and not target.exists():
+        target.unlink()
 
     if target.exists() or target.is_symlink():
         decision = resolve_conflict(prompt_stream, target)
@@ -249,8 +358,12 @@ def install_skill(prompt_stream, skill: dict[str, str | Path], install_dir: Path
             remove_existing(target)
             print(f"Removed existing {dir_name}.")
 
-    shutil.copytree(source, target, symlinks=True)
-    print(f"Installed {dir_name} to {target}")
+    if link_mode:
+        target.symlink_to(source.resolve())
+        print(f"Linked {dir_name} -> {source.resolve()}")
+    else:
+        shutil.copytree(source, target, symlinks=True)
+        print(f"Installed {dir_name} to {target}")
     return True
 
 
@@ -258,15 +371,16 @@ def install_selected(
     prompt_stream,
     selected_skills: list[dict[str, str | Path]],
     install_dir: Path,
+    link_mode: bool,
 ) -> int:
     install_dir.mkdir(parents=True, exist_ok=True)
     installed = 0
     for skill in selected_skills:
-        should_continue = install_skill(prompt_stream, skill, install_dir)
+        should_continue = install_skill(prompt_stream, skill, install_dir, link_mode)
         if not should_continue:
             break
         target = install_dir / str(skill["dir_name"])
-        if target.exists():
+        if target.exists() or target.is_symlink():
             installed += 1
     return installed
 
@@ -286,6 +400,27 @@ def build_parser() -> argparse.ArgumentParser:
         default=DEFAULT_INSTALL_DIR,
         help=f"Install destination. Default: {DEFAULT_INSTALL_DIR}",
     )
+    parser.add_argument(
+        "--source",
+        metavar="PATH",
+        help="Use a local checkout as the source instead of downloading.",
+    )
+    parser.add_argument(
+        "--status",
+        action="store_true",
+        help="Print install status for every skill and exit without installing.",
+    )
+    mode_group = parser.add_mutually_exclusive_group()
+    mode_group.add_argument(
+        "--link",
+        action="store_true",
+        help="Install as symlinks (default when source is local).",
+    )
+    mode_group.add_argument(
+        "--copy",
+        action="store_true",
+        help="Install as copies (default when source is downloaded).",
+    )
     return parser
 
 
@@ -294,13 +429,28 @@ def main() -> int:
     args = parser.parse_args()
 
     try:
-        with tempfile.TemporaryDirectory(prefix="claude-skills-") as temp_dir:
-            archive_data = download_archive(args.archive_url)
-            repo_root = safe_extract(archive_data, Path(temp_dir))
-            skills = discover_skills(repo_root)
-            if not skills:
-                raise InstallerError("No skills found in archive.")
+        install_dir = args.install_dir.expanduser()
+        repo_root, is_local = resolve_source(args)
 
+        if args.link:
+            link_mode = True
+        elif args.copy:
+            link_mode = False
+        else:
+            link_mode = is_local
+
+        if link_mode and not is_local:
+            raise InstallerError(
+                "--link requires a local source (use --source or run from inside the repo)."
+            )
+
+        def run(root: Path) -> int:
+            skills = discover_skills(root, install_dir)
+            if not skills:
+                raise InstallerError("No skills found in source.")
+            if args.status:
+                print_status_report(skills)
+                return 0
             stream = open_prompt_stream()
             stream_context = (
                 contextlib.nullcontext(stream)
@@ -313,13 +463,20 @@ def main() -> int:
                     print("No skills selected.")
                     return 0
                 installed = install_selected(
-                    prompt_stream,
-                    selected_skills,
-                    args.install_dir.expanduser(),
+                    prompt_stream, selected_skills, install_dir, link_mode
                 )
-
             print(f"\nDone. Installed or kept {installed} skill(s).")
             return 0
+
+        if repo_root is not None:
+            print(f"Using local source: {repo_root}")
+            return run(repo_root)
+
+        with tempfile.TemporaryDirectory(prefix="claude-skills-") as temp_dir:
+            archive_data = download_archive(args.archive_url)
+            dl_root = safe_extract(archive_data, Path(temp_dir))
+            return run(dl_root)
+
     except KeyboardInterrupt:
         print("\nAborted.")
         return 130
