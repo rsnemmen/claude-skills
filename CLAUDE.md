@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## What this repo is
 
-A collection of custom Claude Code skills (slash commands) for personal use. Each skill lives in its own subdirectory under `skills/` as a `SKILL.md` file and is installed by symlinking that directory into `~/.claude/skills/`.
+A collection of custom Claude Code skills (slash commands) and Codex CLI skills for personal use. Claude Code skills live under `skills/`; Codex-compatible copies live under `codex-skills/`. Installed copies live outside the repo under `~/.claude/skills/` and `${CODEX_HOME:-$HOME/.codex}/skills/`.
 
 ## Skill file format
 
@@ -28,15 +28,31 @@ The `description` field is the most important: Claude Code uses it to decide whe
 ## Adding a new skill
 
 1. Create `skills/<skill-name>/SKILL.md` following the format above.
-2. Update the skills table in `README.md`.
-3. Symlink to install: `ln -s ~/cc-skills/skills/<skill-name> ~/.claude/skills/<skill-name>`.
+2. Create the Codex copy at `codex-skills/<skill-name>/SKILL.md`.
+3. Update the skills table in `README.md` and docs.
+4. Symlink to install for Claude: `ln -s ~/cc-skills/skills/<skill-name> ~/.claude/skills/<skill-name>`.
+5. Symlink to install for Codex: `ln -s ~/cc-skills/codex-skills/<skill-name> ${CODEX_HOME:-$HOME/.codex}/skills/<skill-name>`.
+
+## Converting Claude skills to Codex
+
+When a user creates or updates a Claude Code skill in `skills/<skill-name>/SKILL.md`, keep that file as the Claude source and convert a copy for Codex:
+
+1. Copy the skill directory to `codex-skills/<skill-name>/`.
+2. Keep `name` and `description` frontmatter.
+3. Remove Claude-only frontmatter fields such as `argument-hint` and `allowed-tools`.
+4. Add `metadata.short-description`.
+5. Add or update `agents/openai.yaml` with `display_name`, `short_description`, and `default_prompt`.
+6. Replace `$ARGUMENTS` with instructions to interpret the user's request.
+7. Replace slash-command wording such as `/<skill-name>` with natural-language Codex triggering.
+8. Replace Claude tool names (`Read`, `Glob`, `Grep`, `Write`, `Edit`, `Agent`, `Explore`) with Codex-compatible process guidance such as `rg`, targeted shell inspection, `apply_patch`, and subagents only when active Codex instructions allow them.
+9. Keep behavior, constraints, and output shape aligned across the Claude and Codex copies unless a platform difference requires divergence.
 
 ## Testing a skill
 
-There is no automated test harness. Test by invoking `/<skill-name>` inside a Claude Code session pointed at a real project and evaluating output quality manually. Use the `/skill-creator` meta-skill (built into CC) to run evals or benchmark a skill's trigger accuracy.
+There is no automated test harness. Test Claude skills by invoking `/<skill-name>` inside a Claude Code session pointed at a real project. Test Codex skills by installing them into `${CODEX_HOME:-$HOME/.codex}/skills/`, restarting Codex, and issuing natural-language requests that should trigger the skill.
 
 ## Repo conventions
 
-- One subdirectory per skill; the directory name must match the `name` frontmatter field.
-- Skill prompts are instructions to a Claude executor — write them precisely, with explicit constraints and output format requirements.
+- One subdirectory per skill per platform; the directory name must match the `name` frontmatter field.
+- Skill prompts are executable instructions to an AI agent. Write them precisely, with explicit constraints and output format requirements.
 - Keep `README.md` in sync whenever a skill is added, renamed, or removed.

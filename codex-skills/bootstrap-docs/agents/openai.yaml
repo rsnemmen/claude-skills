@@ -1,0 +1,3 @@
+display_name: Bootstrap Docs
+short_description: Recommend and scaffold a documentation site
+default_prompt: Recommend a documentation stack for this repository.

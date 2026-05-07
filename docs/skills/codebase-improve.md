@@ -2,6 +2,8 @@
 
 !!! info "Skill metadata"
     - **Name:** `codebase-improve`
+    - **Claude path:** `skills/codebase-improve/SKILL.md`
+    - **Codex path:** `codex-skills/codebase-improve/SKILL.md`
     - **Argument hint:** `[scope] [focus]` — e.g. "fortran/ performance" or "whole codebase maintainability"
     - **Allowed tools:** `Read`, `Glob`, `Grep`, `Bash`, `Agent`
 
@@ -10,6 +12,8 @@
 Research and propose improvements to the current codebase, cited with file:line evidence. Use when the user asks for an audit, refactoring proposal, performance/security/maintainability/test-coverage/dead-code/type-safety/error-handling/DX review, or general "what could we improve here" questions. Produces recommendations only — does not modify code.
 
 ## Usage
+
+Claude Code:
 
 ```
 /codebase-improve
@@ -26,6 +30,16 @@ Scoped to the `fortran/` directory, performance focus.
 ```
 Scoped to the `perl/` wrappers, maintainability focus.
 
+Codex CLI:
+
+```text
+Review this repository for high-impact improvements.
+```
+
+```text
+Audit the fortran/ directory for performance problems.
+```
+
 ## Arguments
 
 Parse arguments as free text describing **scope** (a directory, module, or "the whole codebase") and **focus** (one or more of: performance, security, maintainability, test coverage, dead code, type safety, error handling, DX, or anything else the user names).
@@ -36,7 +50,7 @@ If arguments are empty, the skill does a broad sweep of the whole codebase befor
 
 ### 1. Understand the codebase first
 
-Read `CLAUDE.md`, `README.md`, or equivalent project documentation to understand what the code does, its domain, and its architecture. This context is essential — without it you'll produce generic advice that applies to any project rather than this one.
+Read `AGENTS.md`, `CLAUDE.md`, `README.md`, or equivalent project documentation to understand what the code does, its domain, and its architecture. This context is essential — without it you'll produce generic advice that applies to any project rather than this one.
 
 ### 2. Explore with specific questions
 

@@ -1,5 +1,5 @@
-site_name: Claude Code Skills
-site_description: Custom Claude Code skills (slash commands).
+site_name: Claude Code and Codex CLI Skills
+site_description: Custom Claude Code and Codex CLI skills.
 site_author: Rodrigo Nemmen da Silva
 site_url: https://rsnemmen.github.io/claude-skills/
 repo_url: https://github.com/rsnemmen/claude-skills

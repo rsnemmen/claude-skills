@@ -2,12 +2,36 @@
 
 !!! info "Skill metadata"
     - **Name:** `bootstrap-docs`
+    - **Claude path:** `skills/bootstrap-docs/SKILL.md`
+    - **Codex path:** `codex-skills/bootstrap-docs/SKILL.md`
     - **Argument hint:** `[--scaffold] [stack] [focus]` — empty for Phase 1; `--scaffold` to accept recommendation; `--scaffold <mkdocs|docusaurus|sphinx|hugo|starlight|vitepress|readme>` to override
     - **Allowed tools:** `Read`, `Glob`, `Grep`, `Bash`, `Write`, `Edit`, `Agent`
 
 ## What it does
 
 Research, recommend, and scaffold a documentation website for the current codebase. Two-phase: Phase 1 recommends a stack with rationale (read-only); Phase 2 scaffolds files with real content only after the user confirms or passes `--scaffold`.
+
+## Usage
+
+Claude Code:
+
+```text
+/bootstrap-docs
+```
+
+```text
+/bootstrap-docs --scaffold mkdocs
+```
+
+Codex CLI:
+
+```text
+Recommend a documentation stack for this repository.
+```
+
+```text
+Scaffold a MkDocs documentation site for this repository.
+```
 
 ## Arguments
 

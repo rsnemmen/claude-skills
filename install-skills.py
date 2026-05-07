@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Install selected Claude Code skills without cloning the repository."""
+"""Install selected Claude Code and Codex CLI skills without cloning the repository."""
 
 from __future__ import annotations
 
@@ -26,7 +26,27 @@ except ImportError:
 DEFAULT_ARCHIVE_URL = (
     "https://github.com/rsnemmen/claude-skills/archive/refs/heads/main.zip"
 )
-DEFAULT_INSTALL_DIR = Path.home() / ".claude" / "skills"
+
+
+def default_codex_install_dir() -> Path:
+    codex_home = os.environ.get("CODEX_HOME")
+    if codex_home:
+        return Path(codex_home) / "skills"
+    return Path.home() / ".codex" / "skills"
+
+
+PLATFORM_CONFIGS = {
+    "claude": {
+        "label": "Claude Code",
+        "source_dir": "skills",
+        "install_dir": Path.home() / ".claude" / "skills",
+    },
+    "codex": {
+        "label": "Codex CLI",
+        "source_dir": "codex-skills",
+        "install_dir": default_codex_install_dir(),
+    },
+}
 
 STATUS_LABELS = {
     "not_installed": "not installed",
@@ -114,16 +134,23 @@ def safe_extract(archive_data: bytes, destination: Path) -> Path:
 
 # ─── Source resolution ────────────────────────────────────────────────────────
 
+def has_skill_source(path: Path) -> bool:
+    return any(
+        (path / str(config["source_dir"])).is_dir()
+        and any(
+            (child / "SKILL.md").is_file()
+            for child in (path / str(config["source_dir"])).iterdir()
+            if child.is_dir()
+        )
+        for config in PLATFORM_CONFIGS.values()
+    )
+
+
 def find_local_repo() -> Path | None:
-    """Walk up from the script's location to find a repo root with a skills/ subdir."""
+    """Walk up from the script's location to find a repo root with skill source dirs."""
     candidate = Path(__file__).resolve().parent
     while True:
-        skills_dir = candidate / "skills"
-        if skills_dir.is_dir() and any(
-            (child / "SKILL.md").is_file()
-            for child in skills_dir.iterdir()
-            if child.is_dir()
-        ):
+        if has_skill_source(candidate):
             return candidate
         parent = candidate.parent
         if parent == candidate:
@@ -135,8 +162,8 @@ def resolve_source(args: argparse.Namespace) -> tuple[Path | None, bool]:
     """Return (repo_root, is_local). repo_root=None means use the download path."""
     if args.source is not None:
         source = Path(args.source).expanduser().resolve()
-        if not (source / "skills").is_dir():
-            raise InstallerError(f"--source path has no skills/ subdir: {source}")
+        if not has_skill_source(source):
+            raise InstallerError(f"--source path has no skill source dir: {source}")
         return source, True
     local = find_local_repo()
     if local is not None:
@@ -205,8 +232,10 @@ def parse_frontmatter(skill_file: Path) -> dict[str, str]:
     return metadata
 
 
-def discover_skills(repo_root: Path, install_dir: Path) -> list[dict]:
-    skills_root = repo_root / "skills"
+def discover_skills(repo_root: Path, install_dir: Path, source_dir: str) -> list[dict]:
+    skills_root = repo_root / source_dir
+    if not skills_root.is_dir():
+        raise InstallerError(f"No {source_dir}/ directory found in source.")
     skills: list[dict] = []
     for child in sorted(skills_root.iterdir(), key=lambda p: p.name):
         skill_file = child / "SKILL.md"
@@ -228,6 +257,39 @@ def discover_skills(repo_root: Path, install_dir: Path) -> list[dict]:
     return skills
 
 
+def merged_skills_by_name(platform_skills: dict[str, list[dict]]) -> list[dict]:
+    names = sorted(
+        set.intersection(
+            *[set(skill["dir_name"] for skill in skills) for skills in platform_skills.values()]
+        )
+    )
+    merged: list[dict] = []
+    for name in names:
+        by_platform = {
+            platform: next(skill for skill in skills if skill["dir_name"] == name)
+            for platform, skills in platform_skills.items()
+        }
+        statuses = [str(skill.get("status", "")) for skill in by_platform.values()]
+        if any(status == "outdated" for status in statuses):
+            status = "outdated"
+        elif all(status in {"linked", "up_to_date"} for status in statuses):
+            status = "up_to_date"
+        elif any(status == "not_installed" for status in statuses):
+            status = "not_installed"
+        else:
+            status = statuses[0] if statuses else ""
+        first = by_platform[sorted(by_platform)[0]]
+        merged.append({
+            "dir_name": first["dir_name"],
+            "name": first["name"],
+            "description": first["description"],
+            "short_description": first["short_description"],
+            "status": status,
+            "platform_skills": by_platform,
+        })
+    return merged
+
+
 # ─── Text-mode menu (fallback) ────────────────────────────────────────────────
 
 def open_prompt_stream():
@@ -235,6 +297,17 @@ def open_prompt_stream():
         return open("/dev/tty", "r", encoding="utf-8")
     except OSError:
         return sys.stdin
+
+
+def can_prompt() -> bool:
+    if sys.stdin.isatty() or sys.stdout.isatty():
+        return True
+    try:
+        fd = os.open("/dev/tty", os.O_RDWR)
+    except OSError:
+        return False
+    os.close(fd)
+    return True
 
 
 def prompt(prompt_stream, message: str) -> str:
@@ -264,6 +337,14 @@ def print_status_report(skills: list[dict]) -> None:
     print("Skills status:")
     for skill in skills:
         dir_name = skill["dir_name"]
+        platform_skills = skill.get("platform_skills")
+        if platform_skills:
+            parts = []
+            for platform, platform_skill in platform_skills.items():
+                label = str(PLATFORM_CONFIGS[platform]["label"])
+                parts.append(f"{label}: {_status_tag(str(platform_skill.get('status', '')))}")
+            print(f"  {colorize(dir_name, 'bold')}  " + "  ".join(parts))
+            continue
         status   = str(skill.get("status", ""))
         tag      = _status_tag(status) if status else ""
         print(f"  {colorize(dir_name, 'bold')}  {tag}")
@@ -322,6 +403,24 @@ def choose_skills_text(prompt_stream, skills: list[dict]) -> list[dict]:
         return [skills[index] for index in indexes]
 
 
+def choose_target_text(prompt_stream) -> str:
+    choices = {
+        "": "claude",
+        "1": "claude", "c": "claude", "claude": "claude",
+        "2": "codex", "x": "codex", "codex": "codex",
+        "3": "both", "b": "both", "both": "both",
+    }
+    print("\nInstall skills for:")
+    print("  1. Claude Code (default)")
+    print("  2. Codex CLI")
+    print("  3. Both")
+    while True:
+        answer = prompt(prompt_stream, "Target [1/2/3]: ").lower()
+        if answer in choices:
+            return choices[answer]
+        print("Please enter 1, 2, or 3.")
+
+
 # ─── Curses TUI picker ────────────────────────────────────────────────────────
 
 _CP_GREEN  = 1
@@ -372,7 +471,7 @@ def _curses_picker(stdscr, skills: list[dict]):
 
         # Header
         try:
-            stdscr.addstr(0, 0, "  Claude Skills Installer"[:cols - 1], curses.A_BOLD)
+            stdscr.addstr(0, 0, "  Skills Installer"[:cols - 1], curses.A_BOLD)
         except curses.error:
             pass
 
@@ -580,11 +679,40 @@ def install_selected(
     return installed
 
 
+def install_selected_for_platforms(
+    prompt_stream,
+    selected_skills: list[dict],
+    platforms: list[str],
+    install_dirs: dict[str, Path],
+    link_mode: bool,
+) -> int:
+    installed = 0
+    for platform in platforms:
+        install_dirs[platform].mkdir(parents=True, exist_ok=True)
+    for skill in selected_skills:
+        platform_skills = skill.get("platform_skills")
+        for platform in platforms:
+            platform_skill = (
+                platform_skills[platform]
+                if platform_skills
+                else skill
+            )
+            label = str(PLATFORM_CONFIGS[platform]["label"])
+            print(f"\n{label}:")
+            if install_skill(prompt_stream, platform_skill, install_dirs[platform], link_mode):
+                target = install_dirs[platform] / str(platform_skill["dir_name"])
+                if target.exists() or target.is_symlink():
+                    installed += 1
+            else:
+                return installed
+    return installed
+
+
 # ─── CLI ─────────────────────────────────────────────────────────────────────
 
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
-        description="Install selected Claude Code skills without cloning the repo."
+        description="Install selected Claude Code or Codex CLI skills without cloning the repo."
     )
     parser.add_argument(
         "--archive-url",
@@ -594,8 +722,24 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument(
         "--install-dir",
         type=Path,
-        default=DEFAULT_INSTALL_DIR,
-        help=f"Install destination. Default: {DEFAULT_INSTALL_DIR}",
+        help="Single-target install destination. Defaults to the target platform's user skills dir.",
+    )
+    parser.add_argument(
+        "--claude-install-dir",
+        type=Path,
+        default=PLATFORM_CONFIGS["claude"]["install_dir"],
+        help=f"Claude Code install destination. Default: {PLATFORM_CONFIGS['claude']['install_dir']}",
+    )
+    parser.add_argument(
+        "--codex-install-dir",
+        type=Path,
+        default=PLATFORM_CONFIGS["codex"]["install_dir"],
+        help=f"Codex CLI install destination. Default: {PLATFORM_CONFIGS['codex']['install_dir']}",
+    )
+    parser.add_argument(
+        "--target",
+        choices=("claude", "codex", "both"),
+        help="Install target. Defaults to Claude Code unless omitted in an interactive install.",
     )
     parser.add_argument(
         "--source",
@@ -641,7 +785,9 @@ def main() -> int:
         _color_disabled = True
 
     try:
-        install_dir = args.install_dir.expanduser()
+        if args.install_dir is not None and args.target == "both":
+            raise InstallerError("--install-dir cannot be used with --target both.")
+
         repo_root, is_local = resolve_source(args)
 
         if args.link:
@@ -657,7 +803,44 @@ def main() -> int:
             )
 
         def run(root: Path) -> int:
-            skills = discover_skills(root, install_dir)
+            target = args.target
+            if target is None:
+                if args.status or not can_prompt():
+                    target = "claude"
+                else:
+                    stream = open_prompt_stream()
+                    ctx = (
+                        contextlib.nullcontext(stream)
+                        if stream is sys.stdin
+                        else contextlib.closing(stream)
+                    )
+                    with ctx as prompt_stream:
+                        target = choose_target_text(prompt_stream)
+
+            if args.install_dir is not None and target == "both":
+                raise InstallerError("--install-dir cannot be used when installing both targets.")
+
+            platforms = ["claude", "codex"] if target == "both" else [target]
+            install_dirs = {
+                "claude": Path(args.claude_install_dir).expanduser(),
+                "codex": Path(args.codex_install_dir).expanduser(),
+            }
+            if args.install_dir is not None:
+                install_dirs[str(target)] = args.install_dir.expanduser()
+
+            platform_skills = {
+                platform: discover_skills(
+                    root,
+                    install_dirs[platform],
+                    str(PLATFORM_CONFIGS[platform]["source_dir"]),
+                )
+                for platform in platforms
+            }
+            skills = (
+                merged_skills_by_name(platform_skills)
+                if len(platforms) > 1
+                else platform_skills[platforms[0]]
+            )
             if not skills:
                 raise InstallerError("No skills found in source.")
 
@@ -678,7 +861,13 @@ def main() -> int:
                     ps = open_prompt_stream()
                     ctx = contextlib.nullcontext(ps) if ps is sys.stdin else contextlib.closing(ps)
                     with ctx as prompt_stream:
-                        installed = install_selected(prompt_stream, selected, install_dir, link_mode)
+                        installed = install_selected_for_platforms(
+                            prompt_stream,
+                            selected,
+                            platforms,
+                            install_dirs,
+                            link_mode,
+                        )
                     print(f"\nDone. Installed or kept {installed} skill(s).")
                     return 0
                 # picker_status == "failed" — fall through to text menu
@@ -695,7 +884,13 @@ def main() -> int:
                 if not selected:
                     print("No skills selected.")
                     return 0
-                installed = install_selected(prompt_stream, selected, install_dir, link_mode)
+                installed = install_selected_for_platforms(
+                    prompt_stream,
+                    selected,
+                    platforms,
+                    install_dirs,
+                    link_mode,
+                )
             print(f"\nDone. Installed or kept {installed} skill(s).")
             return 0
 
