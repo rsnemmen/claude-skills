@@ -5,6 +5,7 @@
 | Skill | Trigger | Description |
 |-------|---------|-------------|
 | `codebase-improve` | `/codebase-improve [scope] [focus]` | Audits a codebase and proposes the top 5 improvements ranked by severity, with file:line citations. Read-only — never modifies code. |
+| `bootstrap-docs` | `/bootstrap-docs [--scaffold] [stack] [focus]` | Researches and recommends a documentation-site stack for the current codebase (Phase 1, read-only), then scaffolds it with real starter content from README and source on confirmation (Phase 2). GitHub Pages deploy only. |
 
 ## Installation
 
