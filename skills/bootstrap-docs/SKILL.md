@@ -55,7 +55,37 @@ Evaluate at least: MkDocs+Material, Docusaurus, Sphinx, Hugo, Astro Starlight, V
 
 ### 4. Deliver the recommendation
 
-Write the recommendation in themed prose (see Output style). Cover in any order that reads well: what you found in the codebase (with `file:line` evidence), the recommended stack in one short rationale paragraph, 1–2 honest alternatives each in one paragraph naming the specific tradeoff — not a feature list, the deploy story in one line (e.g. `mkdocs gh-deploy`), and close with: *"Re-invoke with `--scaffold` to accept, or `--scaffold <stack>` to override."*
+Structure the output in this order:
+
+**a. Open with a prominent recommendation block** — always the very first thing:
+
+```
+## Recommended: <Stack Name>
+
+<One sentence: the single strongest reason this stack fits this codebase, with a file:line cite.>
+Deploy: `<deploy command>`
+```
+
+**b. Rationale prose** — one short paragraph explaining the fit, weaving in `file:line` evidence.
+
+**c. Alternatives** — 1–2 paragraphs, one per alternative, each naming the specific tradeoff (not a feature list). Only include alternatives that are genuinely worth considering; skip stacks that clearly don't fit.
+
+**d. Close with a formatted options menu:**
+
+```
+### Options
+
+| # | Stack | Notes |
+|---|-------|-------|
+| **1 ← recommended** | <recommended stack> | <one-phrase reason> |
+| 2 | <alternative 1> | <one-phrase tradeoff> |
+| 3 | <alternative 2> | <one-phrase tradeoff> |
+
+To scaffold the recommended stack:  /bootstrap-docs --scaffold
+To choose a different stack:        /bootstrap-docs --scaffold <stack>
+```
+
+Include only stacks that appeared in the rationale. The table must make the recommended option visually obvious at a glance.
 
 **Stop here.** Do not write any files, create directories, run `pip install` or `npm install`, or execute any mutating command.
 
@@ -65,11 +95,31 @@ Write the recommendation in themed prose (see Output style). Cover in any order 
 
 Read `README.md` and the top-level directory listing fresh. Do not rely on Phase 1 memory alone.
 
-### 2. Plan the nav
+### 2. Announce the file plan before writing anything
+
+Before creating any file, print:
+
+```
+## Scaffold plan — <Stack Name>
+
+Files to create:
+- `mkdocs.yml` — site config with nav
+- `docs/index.md` — overview page from README
+- `docs/<page>.md` — <one-phrase description> (×N)
+
+Run command to preview: `<dev-server command>`
+Run command to deploy:  `<deploy command>`
+
+Creating files now…
+```
+
+This lets the user see exactly what is about to happen. Then proceed to write the files.
+
+### 3. Plan the nav
 
 Each top-level source directory or major README section becomes one page. Hand-curate a `nav:` block — no `awesome-pages` plugin, no auto-discovery. If the codebase is too large (hundreds of modules) to scaffold fully in one turn, cover the top two nav levels and append a short "Next pages to add" list at the end of `docs/index.md` rather than attempting everything at once.
 
-### 3. MkDocs Material scaffold (worked example — the most likely pick)
+### 4. MkDocs Material scaffold (worked example — the most likely pick)
 
 Write these files, derived from real codebase content only:
 
@@ -113,7 +163,7 @@ markdown_extensions:
 - `## Usage` header
 - One `### item-name` subsection per item, each with a fenced `sh` or language-appropriate code block showing invocation, followed by 1–3 sentences of prose. All content must trace to real README text, source comments, or help output. When no real text exists, write a one-line "TODO: add description" — never invent plausible-sounding content.
 
-### 4. Other stacks
+### 5. Other stacks
 
 For **Docusaurus, Astro Starlight, VitePress**: do not run `npx create-*` (interactive and requires network). Write the config file (`docusaurus.config.js` / `astro.config.mjs` / `.vitepress/config.ts`) and the `docs/` content tree directly following the same content-from-real-sources rule, then print the exact `npm install` and dev-server commands for the user to run.
 
@@ -123,7 +173,7 @@ For **Hugo**: write `hugo.toml`, `content/_index.md`, and per-section content pa
 
 For **README/Wiki**: rewrite `README.md` as a richer single-file guide with anchored sections and a table of contents. Do not create a site or generator config.
 
-### 5. Post-scaffold summary
+### 6. Post-scaffold summary
 
 Print: the list of files created, what the user should review for correctness (especially item descriptions sourced from sparse comments), the exact command to preview locally, and — if the user passed a stack that didn't match the Phase 1 recommendation — a one-sentence note on the tradeoff accepted.
 
@@ -138,6 +188,6 @@ Print: the list of files created, what the user should review for correctness (e
 
 ## Output style
 
-**Phase 1:** Themed prose — no rigid template. Lead with the single most important takeaway. Weave `file:line` evidence into sentences (e.g. "60+ scripts across 10 directories (`README.md:18-29`) cluster naturally into per-category pages…"). Each alternative gets one paragraph naming its specific tradeoff, not a feature list. No severity labels, no emojis, no formal "Alternatives considered" header. If no meaningful docs gap exists (tiny repo, everything already documented), say so plainly.
+**Phase 1:** Lead with the `## Recommended:` block (stack name + one-sentence reason + deploy command), then rationale prose, then alternatives, then the options menu table. The recommendation must be unmissable — it comes first and appears again in the table. Weave `file:line` evidence into sentences. No severity labels, no emojis. If no meaningful docs gap exists (tiny repo, everything already documented), say so plainly instead of recommending a stack.
 
 **Phase 2:** Concrete and procedural — state what each file contains as you create it, then print the summary. One short paragraph at the end naming what to review. No padding.
