@@ -1,3 +1,4 @@
-display_name: Codebase Improve
-short_description: Audit a codebase and propose concrete improvements
-default_prompt: Review this codebase for high-impact improvements.
+interface:
+  display_name: "Codebase Improve"
+  short_description: "Audit a codebase and propose concrete improvements"
+  default_prompt: "Use $codebase-improve to review this codebase for high-impact improvements."

@@ -47,7 +47,7 @@ When a user creates or updates a Claude Code skill in `skills/<skill-name>/SKILL
 2. Keep `name` and `description` frontmatter.
 3. Remove Claude-only frontmatter fields such as `argument-hint` and `allowed-tools`.
 4. Add `metadata.short-description`.
-5. Add or update `agents/openai.yaml` with `display_name`, `short_description`, and `default_prompt`.
+5. Add or update `agents/openai.yaml` with quoted `interface.display_name`, `interface.short_description`, and `interface.default_prompt` values.
 6. Replace `$ARGUMENTS` with instructions to interpret the user's request.
 7. Replace slash-command wording such as `/<skill-name>` with natural-language Codex triggering.
 8. Replace Claude tool names (`Read`, `Glob`, `Grep`, `Write`, `Edit`, `Agent`, `Explore`) with Codex-compatible process guidance such as `rg`, targeted shell inspection, `apply_patch`, and subagents only when active Codex instructions allow them.
