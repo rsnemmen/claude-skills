@@ -1,6 +1,4 @@
-# cc-skills
-
-Custom Claude Code skills.
+# Custom Claude Code skills.
 
 ## Skills
 
