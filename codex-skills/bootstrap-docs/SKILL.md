@@ -116,9 +116,3 @@ Print the files created, what the user should review for correctness, the exact 
 - Never execute deploy or install commands.
 - Respect a stack override and note the tradeoff.
 - Cite evidence in Phase 1 inline with file:line references.
-
-## Output style
-
-Phase 1: Lead with the `## Recommended:` block, then rationale, alternatives, and options table.
-
-Phase 2: Concrete and procedural. State what each file contains as you create it, then print the summary.
