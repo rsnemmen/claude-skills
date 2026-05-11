@@ -5,7 +5,6 @@ Personal collection of custom Claude Code slash commands and Codex CLI skills. F
 ## Skills
 
 - **`codebase-improve`** — audit a codebase and propose ranked improvements with file:line citations. Read-only.
-- **`bootstrap-docs`** — research and recommend a documentation-site stack, then scaffold it from real repo content on confirmation.
 
 ## Quick install
 
